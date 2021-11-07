@@ -105,16 +105,73 @@
 
 Volumes allows sharing data (files , folders) between host and container and, between containers
 
-##### Share data between host and container :
+#### Share data between host and container :
 
 We will share our website to docker container using volume.
 
 Let's say we have a folder on `docker/example/share_data_between_host_container/static_website/` which contains a static website. We will share this with a container named `website` on port 3000:80 in docker.
 
-- `docker run --name website -p 3000:80 -v $(pwd):/user/share/nginx/html:ro nginx:latest -d`
+- `docker run --name website -p 3000:80 -v $(pwd):/usr/share/nginx/html:ro nginx:latest -d`
 
   here `pwd` refers to the present working directory (lets assume we are using the command inside our local website folder) and `ro` refers to `read only`
 
   its actually => `hosts_dir:container_dir:permission_type`
 
 - open shell into a running container : `docker exec -it container_name//id bash`
+
+#### Share data between containers
+
+As we have a container named `website` which is sharing data with the host (local pc). No we want to make e new container that will share data with `website` container.
+
+- `docker run --name website_2 --volumes-from website -d -p 8081:80 nginx:latest`
+
+### Build Own Images
+
+Lets build a image from out previous website whose source codes are available in `docker/example/share_data_between_host_container/static_website/` folder.
+
+First if all add a Dockerfile in the base folder.
+
+Dockerfile
+
+```Dockerfile
+FROM nginx:latest
+ADD . /usr/share/nginx/html
+```
+
+At first we are pulling the nginx from docker registry. Then will copy all the files of our local folder into `/usr/share/nginx/html` in the image container.
+
+file structure will look like this :
+
+```
+(base)  jspw@brainFuck  ~/Documents/Projects/DevOps-Journey/docker/example/share_data_between_host_container/static_website   main ±  la
+total 80K
+-rw-rw-r-- 1 jspw jspw  12K Nov  7 22:26 about.html
+-rw-rw-r-- 1 jspw jspw 9.6K Nov  7 22:26 contact.html
+drwxrwxr-x 2 jspw jspw 4.0K Nov  7 22:26 css
+-rw-rw-r-- 1 jspw jspw   46 Nov  8 00:50 Dockerfile
+drwxrwxr-x 4 jspw jspw 4.0K Nov  7 22:26 fontawesome
+drwxrwxr-x 2 jspw jspw 4.0K Nov  7 22:26 img
+-rw-rw-r-- 1 jspw jspw  15K Nov  7 22:26 index.html
+drwxrwxr-x 2 jspw jspw 4.0K Nov  7 22:26 js
+-rw-rw-r-- 1 jspw jspw  13K Nov  7 22:26 post.html
+drwxrwxr-x 2 jspw jspw 4.0K Nov  7 22:26 video
+```
+
+- Build image : `docker build --tag name:version_tag location_of_docker_file`
+
+  Example : `docker build --tag website:latest .`
+
+  Here `.` refers to the current directory
+
+  ```
+  (base)  jspw@brainFuck  ~/Documents/Projects/DevOps-Journey/docker/example/share_data_between_host_container/static_website   main ±  docker build --tag website:latest .
+  Sending build context to Docker daemon  8.982MB
+  Step 1/2 : FROM nginx:latest
+  ---> 87a94228f133
+  Step 2/2 : ADD . /usr/share/nginx/html
+  ---> c7c9f6b1e6d8
+  Successfully built c7c9f6b1e6d8
+
+  ```
+
+- run the build image : `docker run --name website -p 8000:80 website:latest`
